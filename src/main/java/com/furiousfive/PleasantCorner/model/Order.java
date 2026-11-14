@@ -58,6 +58,7 @@ public class Order {
      * at the same table sees a clean history. Admin views are unaffected.
      */
     @Column(nullable = false)
+    @Builder.Default
     private boolean customerArchived = false;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)

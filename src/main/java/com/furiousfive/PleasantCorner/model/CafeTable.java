@@ -31,6 +31,7 @@ public class CafeTable {
      * Set to true when customer clicks "Browse Menu", false when they check out.
      */
     @Column(nullable = false)
+    @Builder.Default
     private boolean occupied = false;
 
     /**
@@ -46,13 +47,13 @@ public class CafeTable {
      * Generated server-side via ZXing whenever ngrok URL is configured.
      * Displayed in admin Tables & QR page and downloadable.
      */
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String tableQrDataUrl;
 
     /**
      * Base64-encoded payment QR image uploaded by admin in the Payments page.
      * Shown to customers on the checkout screen when they choose QR payment.
      */
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String paymentQrDataUrl;
 }

@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +20,8 @@ public class CustomerOrderService {
     private final MenuItemRepository   menuItemRepository;
     private final CafeTableRepository  cafeTableRepository;
     private final DiscountRepository   discountRepository;
+    private final ToppingRepository    toppingRepository;
+    private final DrinkStateRepository drinkStateRepository;
     private final PaymentRepository    paymentRepository;
 
     /**
@@ -28,8 +32,27 @@ public class CustomerOrderService {
     public Order placeOrder(Integer tableNumber, String paymentMethod,
                             String discountCode, List<OrderItemRequest> items) {
 
+        if (tableNumber == null)
+            throw new IllegalArgumentException("Table number is required");
+        if (items == null || items.isEmpty())
+            throw new IllegalArgumentException("Order has no items");
+        if (!"Cash".equals(paymentMethod) && !"QR".equals(paymentMethod))
+            throw new IllegalArgumentException("Payment method must be Cash or QR");
+
         CafeTable table = cafeTableRepository.findByTableNumber(tableNumber)
+            .filter(t -> !"inactive".equals(t.getStatus()))
             .orElseThrow(() -> new IllegalArgumentException("Table not found: " + tableNumber));
+
+        // Option prices, looked up by the names the customer app sends
+        Map<String, BigDecimal> toppingPrices = toppingRepository.findAll().stream()
+            .filter(t -> "available".equals(t.getStatus()))
+            .collect(Collectors.toMap(t -> t.getName().trim().toLowerCase(),
+                t -> t.getPriceAdjustment() != null ? t.getPriceAdjustment() : BigDecimal.ZERO,
+                (a, b) -> a));
+        Map<String, BigDecimal> drinkStatePrices = drinkStateRepository.findAll().stream()
+            .collect(Collectors.toMap(d -> d.getName().trim().toLowerCase(),
+                d -> d.getPriceAdjustment() != null ? d.getPriceAdjustment() : BigDecimal.ZERO,
+                (a, b) -> a));
 
         Integer maxQueue = orderRepository.findMaxQueueNumber();
         int nextQueue = (maxQueue != null ? maxQueue : 0) + 1;
@@ -44,10 +67,30 @@ public class CustomerOrderService {
         // Build order items and calculate subtotal
         BigDecimal subtotal = BigDecimal.ZERO;
         for (OrderItemRequest req : items) {
+            if (req.getMenuItemId() == null)
+                throw new IllegalArgumentException("Menu item id is required");
             MenuItem menuItem = menuItemRepository.findById(req.getMenuItemId())
                 .orElseThrow(() -> new IllegalArgumentException("Menu item not found: " + req.getMenuItemId()));
+            if (!menuItem.isAvailable())
+                throw new IllegalArgumentException(menuItem.getItemName() + " is no longer available");
+            if (req.getQuantity() < 1 || req.getQuantity() > 50)
+                throw new IllegalArgumentException("Invalid quantity for " + menuItem.getItemName());
 
-            BigDecimal lineTotal = menuItem.getPrice()
+            // Unit price = base price + selected drink state + toppings
+            // (matches what the customer app shows in the cart)
+            BigDecimal unitPrice = menuItem.getPrice();
+            if (req.getDrinkState() != null && !req.getDrinkState().isBlank()) {
+                unitPrice = unitPrice.add(drinkStatePrices.getOrDefault(
+                    req.getDrinkState().trim().toLowerCase(), BigDecimal.ZERO));
+            }
+            if (req.getToppingsNote() != null && !req.getToppingsNote().isBlank()) {
+                for (String name : req.getToppingsNote().split(",")) {
+                    unitPrice = unitPrice.add(toppingPrices.getOrDefault(
+                        name.trim().toLowerCase(), BigDecimal.ZERO));
+                }
+            }
+
+            BigDecimal lineTotal = unitPrice
                 .multiply(BigDecimal.valueOf(req.getQuantity()));
             subtotal = subtotal.add(lineTotal);
 

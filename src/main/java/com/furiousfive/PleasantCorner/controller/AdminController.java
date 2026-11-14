@@ -190,8 +190,7 @@ public class AdminController {
     @GetMapping("/settings")
     public String settings(Model model, Authentication auth) {
         common(model, auth, "settings");
-        model.addAttribute("ngrokBaseUrl", qrCodeService.getNgrokBaseUrl()
-            .replace("http://localhost:8001", ""));
+        model.addAttribute("ngrokBaseUrl", qrCodeService.getConfiguredBaseUrl());
         return "admin/settings";
     }
 }

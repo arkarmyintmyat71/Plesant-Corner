@@ -574,7 +574,13 @@ document.addEventListener('DOMContentLoaded', function () {
     window.tqDelete = async function (id) {
       if (!confirm('Delete this table?')) return;
       try {
-        await fetch(`/api/tables/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/tables/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          let msg = 'Could not delete table.';
+          try { const body = await res.json(); if (body && body.error) msg = body.error; } catch (_) {}
+          alert(msg);
+          return;
+        }
         tables = tables.filter(x => x.id !== id);
         renderTables();
       } catch(e) { alert('Could not delete table.'); }

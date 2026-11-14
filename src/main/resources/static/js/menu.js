@@ -96,7 +96,11 @@ async function apiSave(data, id) {
 
 async function apiDelete(id) {
   const res = await fetch(`/api/menu-items/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Delete failed: ' + res.status);
+  if (!res.ok) {
+    let msg = 'Delete failed: ' + res.status;
+    try { const body = await res.json(); if (body && body.error) msg = body.error; } catch (_) {}
+    throw new Error(msg);
+  }
 }
 
 async function apiToggleAvail(id, avail) {
@@ -466,7 +470,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       render();
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Could not delete item. Please try again.');
+      alert(err && err.message && !err.message.startsWith('Delete failed')
+        ? err.message
+        : 'Could not delete item. Please try again.');
     }
   });
 

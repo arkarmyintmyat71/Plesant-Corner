@@ -110,9 +110,12 @@ public class DataInitializer implements CommandLineRunner {
             }
             log.info("Seeded 12 cafe tables with QR codes");
         } else {
-            // Regenerate QR for tables that don't have one yet
+            // Regenerate QR for tables that have none yet, or whose QR still points
+            // at an old address (e.g. localhost or an expired ngrok URL)
             cafeTableRepository.findAll().forEach(t -> {
-                if (t.getTableQrDataUrl() == null || t.getTableQrDataUrl().isBlank()) {
+                String expectedUrl = qrCodeService.buildCustomerUrl(t.getTableNumber());
+                if (t.getTableQrDataUrl() == null || t.getTableQrDataUrl().isBlank()
+                        || !expectedUrl.equals(t.getCustomerUrl())) {
                     String url = qrCodeService.buildCustomerUrl(t.getTableNumber());
                     t.setCustomerUrl(url);
                     t.setTableQrDataUrl(qrCodeService.generateQrDataUrl(url));
