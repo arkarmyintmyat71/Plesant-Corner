@@ -1,10 +1,18 @@
 server:
   address: 0.0.0.0
-  port: 8001
+  # Render injects PORT; locally it falls back to 8080
+  port: 8080
+  # Render terminates HTTPS in front of the app. Trust its X-Forwarded-* headers
+  # so redirects (login, logout) stay on https:// instead of dropping to http://
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: Pleasant-Corner
+
+  # Optional file written by the admin Settings page (public base URL)
+  config:
+    import: optional:file:./app-override.properties
 
   # Thymeleaf
   thymeleaf:
@@ -12,32 +20,40 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
 
-  # JPA / Hibernate
+  # JPA / Hibernate (dialect is detected automatically — works for MySQL and TiDB)
   jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: false
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
-
 
   jackson:
     serialization:
       fail-on-empty-beans: false
     default-property-inclusion: non_null
-  # DataSource
+
+  # DataSource — set DB_URL / DB_USERNAME / DB_PASSWORD (Render env vars or IntelliJ run config).
+  # TiDB Cloud: jdbc:mysql://<host>:4000/pleasant_corner_db?sslMode=VERIFY_IDENTITY&useUnicode=yes&characterEncoding=UTF-8
+  # TiDB usernames have a prefix, e.g. 3cM5pnnFGqTCHYd.root
   datasource:
-    url: jdbc:mysql://localhost:3306/pcdb5?useUnicode=yes&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/pleasant_corner_db?useUnicode=yes&characterEncoding=UTF-8
     username: root
     password: Ark@r122181
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # TiDB Serverless closes idle connections; keep the pool small and fresh
+      maximum-pool-size: 5
+      max-lifetime: 300000
+      idle-timeout: 120000
+      keepalive-time: 60000
 
 # ── Pleasant Corner App Settings ──────────────────────────────
 app:
-  # Set this to your ngrok public URL (no trailing slash) before running.
-  # Example: https://abc123.ngrok-free.app
-  # Leave blank to use localhost — QR codes will use http://localhost:8001
-  ngrok-base-url: "https://fawn-encephalographic-scaly.ngrok-free.dev"
+  # Public URL used in table QR codes, e.g. https://pleasant-corner.onrender.com
+  public-base-url: https://plesant-corner.onrender.com
+  admin-password: admin@12345
+  kitchen-password: kitchen@12345

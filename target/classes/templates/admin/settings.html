@@ -86,17 +86,17 @@
       </div>
 
 
-      <!-- ngrok & Customer QR -->
+      <!-- Public URL & Customer QR -->
       <div class="settings-card">
-        <h5><i class="bi bi-qr-code me-2"></i>Customer QR Codes &amp; ngrok</h5>
+        <h5><i class="bi bi-qr-code me-2"></i>Customer QR Codes &amp; Public URL</h5>
         <p style="font-size:.85rem;color:#7a6535;margin-bottom:18px;">
-          When using <strong>ngrok</strong>, enter your public URL below so that
-          table QR codes point to a URL your customers' phones can reach.
+          Enter your website's public URL (your Render address, or an ngrok URL when testing)
+          so that table QR codes point to a URL your customers' phones can reach.
           After saving, click <em>Regenerate All QR Codes</em> to update every table.
         </p>
         <div class="settings-field">
-          <label>ngrok Public URL <span style="font-weight:400;color:#a8975e;">(e.g. https://abc123.ngrok-free.app)</span></label>
-          <input type="text" id="ngrokUrlInput" placeholder="https://abc123.ngrok-free.app"
+          <label>Public URL <span style="font-weight:400;color:#a8975e;">(e.g. https://pleasant-corner.onrender.com)</span></label>
+          <input type="text" id="ngrokUrlInput" placeholder="https://pleasant-corner.onrender.com"
                  th:value="${ngrokBaseUrl}"/>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
@@ -129,7 +129,11 @@
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ ngrokBaseUrl: url })
       });
-      if (!res.ok) throw new Error(res.status);
+      if (!res.ok) {
+        let msg = res.status;
+        try { const b = await res.json(); if (b && b.error) msg = b.error; } catch (_) {}
+        throw new Error(msg);
+      }
       status.textContent = '✓ URL saved. Click Regenerate to update QR codes.';
       status.style.color = '#16a34a';
     } catch(e) {

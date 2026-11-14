@@ -29,6 +29,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COALESCE(SUM(o.total), 0) FROM Order o WHERE o.paymentMethod = :method AND o.createdAt BETWEEN :from AND :to AND o.status = 'completed'")
     BigDecimal sumTotalByMethodBetween(@Param("method") String method, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    /** Number of orders placed at a table (used to block deleting tables with history) */
+    long countByTable_Id(Long tableId);
+
+    /** Number of order lines that use a menu item (used to block deleting ordered items) */
+    @Query("SELECT COUNT(i) FROM OrderItem i WHERE i.menuItem.id = :menuItemId")
+    long countOrderItemsForMenuItem(@Param("menuItemId") Long menuItemId);
+
     /** Max queue number across all orders (for auto-increment) */
     @Query("SELECT COALESCE(MAX(o.queueNumber), 0) FROM Order o")
     Integer findMaxQueueNumber();

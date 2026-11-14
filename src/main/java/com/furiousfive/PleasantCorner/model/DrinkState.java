@@ -21,9 +21,11 @@ public class DrinkState {
     private String name;           // Hot, Iced, Warm, etc.
 
     @Column(precision = 10, scale = 2)
+    @Builder.Default
     private BigDecimal priceAdjustment = BigDecimal.ZERO;
 
     @Column(name = "is_default")
+    @Builder.Default
     private boolean defaultState = false;
 
     @Column(length = 10)

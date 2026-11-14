@@ -61,6 +61,8 @@ public class Payment {
     /** The order this payment belongs to. */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private Order order;
 
     @PrePersist

@@ -1,0 +1,7 @@
+target/
+.idea/
+.git/
+*.iml
+.env
+app-override.properties
+ngrok-override.properties

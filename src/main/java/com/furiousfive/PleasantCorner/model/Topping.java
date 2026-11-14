@@ -21,6 +21,7 @@ public class Topping {
     private String name;
 
     @Column(precision = 10, scale = 2)
+    @Builder.Default
     private BigDecimal priceAdjustment = BigDecimal.ZERO;
 
     @Column(length = 20)

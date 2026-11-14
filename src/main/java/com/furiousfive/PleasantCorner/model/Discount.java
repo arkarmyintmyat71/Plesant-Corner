@@ -46,5 +46,6 @@ public class Discount {
      * If false, customer must enter the code manually.
      */
     @Column(nullable = false)
+    @Builder.Default
     private boolean autoApply = false;
 }

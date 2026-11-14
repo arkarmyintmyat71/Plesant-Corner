@@ -17,6 +17,7 @@ public class CafeTableApiController {
 
     private final CafeTableRepository repo;
     private final QrCodeService       qrCodeService;
+    private final com.furiousfive.PleasantCorner.repository.OrderRepository orderRepository;
 
     @GetMapping
     public List<Map<String, Object>> getAll() {
@@ -46,16 +47,28 @@ public class CafeTableApiController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CafeTable> update(@PathVariable Long id, @RequestBody CafeTable item) {
-        item.setId(id);
-        // Regenerate QR in case table number or ngrok URL changed
-        String url = qrCodeService.buildCustomerUrl(item.getTableNumber());
-        item.setCustomerUrl(url);
-        item.setTableQrDataUrl(qrCodeService.generateQrDataUrl(url));
-        return ResponseEntity.ok(repo.save(item));
+        // Update only the fields the edit form sends, so the payment QR and
+        // occupied flag of the existing table are kept
+        CafeTable existing = repo.findById(id).orElse(null);
+        if (existing == null) return ResponseEntity.notFound().build();
+        if (item.getTableNumber() != null) existing.setTableNumber(item.getTableNumber());
+        existing.setSeats(item.getSeats());
+        existing.setLocationNote(item.getLocationNote());
+        if (item.getStatus() != null) existing.setStatus(item.getStatus());
+        // Regenerate QR in case table number or public URL changed
+        String url = qrCodeService.buildCustomerUrl(existing.getTableNumber());
+        existing.setCustomerUrl(url);
+        existing.setTableQrDataUrl(qrCodeService.generateQrDataUrl(url));
+        return ResponseEntity.ok(repo.save(existing));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        // Orders reference their table; deleting it would break order history
+        if (orderRepository.countByTable_Id(id) > 0) {
+            return ResponseEntity.status(409).body(Map.of("error",
+                "This table has order history, so it can't be deleted. Set it to inactive instead."));
+        }
         repo.deleteById(id);
         return ResponseEntity.noContent().build();
     }

@@ -15,6 +15,7 @@ import java.util.Map;
 public class MenuItemApiController {
 
     private final MenuItemService service;
+    private final com.furiousfive.PleasantCorner.repository.OrderRepository orderRepository;
 
     @GetMapping
     public List<MenuItem> getAll() {
@@ -42,7 +43,12 @@ public class MenuItemApiController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        // Past orders reference the item; deleting it would break order history
+        if (orderRepository.countOrderItemsForMenuItem(id) > 0) {
+            return ResponseEntity.status(409).body(Map.of("error",
+                "This item appears in past orders, so it can't be deleted. Mark it unavailable instead."));
+        }
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }

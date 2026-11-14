@@ -84,17 +84,19 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
+    UserDetailsService userDetailsService(PasswordEncoder passwordEncoder,
+            @org.springframework.beans.factory.annotation.Value("${app.admin-password:admin@12345}") String adminPassword,
+            @org.springframework.beans.factory.annotation.Value("${app.kitchen-password:kitchen@12345}") String kitchenPassword) {
 
         UserDetails admin = User.builder()
             .username("admin")
-            .password(passwordEncoder.encode("admin123"))
+            .password(passwordEncoder.encode(adminPassword))
             .roles("ADMIN")
             .build();
 
         UserDetails kitchen = User.builder()
             .username("kitchen")
-            .password(passwordEncoder.encode("kitchen123"))
+            .password(passwordEncoder.encode(kitchenPassword))
             .roles("KITCHEN")
             .build();
 

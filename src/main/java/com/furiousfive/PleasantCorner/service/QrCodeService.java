@@ -19,18 +19,36 @@ import java.util.Map;
 @Service
 public class QrCodeService {
 
-    @Value("${app.ngrok-base-url:}")
-    private String ngrokBaseUrl;
+    /** Public base URL, e.g. https://pleasant-corner.onrender.com — "" if not configured. */
+    private volatile String publicBaseUrl;
 
-    /**
-     * Returns the customer URL for a given table number.
-     * Uses ngrok URL when configured, otherwise falls back to localhost.
-     */
+    /** Used only when no public URL is configured (local development). */
+    private final String localFallback;
+
+    public QrCodeService(@Value("${app.public-base-url:}") String configured,
+                         @Value("${server.port:8080}") String port) {
+        this.publicBaseUrl = normalize(configured);
+        this.localFallback = "http://localhost:" + port;
+    }
+
+    /** What the admin configured ("" if nothing) — shown in the Settings input. */
+    public String getConfiguredBaseUrl() {
+        return publicBaseUrl;
+    }
+
+    /** Base URL actually used in QR codes. */
+    public String getBaseUrl() {
+        return publicBaseUrl.isEmpty() ? localFallback : publicBaseUrl;
+    }
+
+    /** Called from the Settings page — takes effect immediately, no restart needed. */
+    public void setBaseUrl(String url) {
+        this.publicBaseUrl = normalize(url);
+    }
+
+    /** Customer URL for a table, e.g. https://.../customer/table/7 */
     public String buildCustomerUrl(int tableNumber) {
-        String base = (ngrokBaseUrl != null && !ngrokBaseUrl.isBlank())
-            ? ngrokBaseUrl.stripTrailing()
-            : "http://localhost:8001";
-        return base + "/customer/table/" + tableNumber;
+        return getBaseUrl() + "/customer/table/" + tableNumber;
     }
 
     /**
@@ -55,8 +73,10 @@ public class QrCodeService {
         }
     }
 
-    public String getNgrokBaseUrl() {
-        return (ngrokBaseUrl != null && !ngrokBaseUrl.isBlank())
-            ? ngrokBaseUrl : "http://localhost:8001";
+    private static String normalize(String url) {
+        if (url == null) return "";
+        String u = url.trim();
+        while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
+        return u;
     }
 }

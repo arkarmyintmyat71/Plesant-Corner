@@ -40,12 +40,14 @@ public class MenuItem {
     private String emojiIcon;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean available = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean featuredItem = false;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String imageUrl;
 
     /**
@@ -53,6 +55,7 @@ public class MenuItem {
      * Configured by admin in Menu Items. Only relevant when itemType = DRINK.
      */
     @Column(nullable = false)
+    @Builder.Default
     private boolean supportsDrinkStates = true;
 
     /**
@@ -60,5 +63,6 @@ public class MenuItem {
      * Configured by admin in Menu Items. Only relevant when itemType = FOOD.
      */
     @Column(nullable = false)
+    @Builder.Default
     private boolean supportsToppings = true;
 }
